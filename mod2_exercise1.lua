@@ -31,46 +31,47 @@ local function formatKey(k)
   return '[' .. formatValue(k) .. '] = '
 end
 
+local function writeValue(ctx, value, depth)
+  local buffer = ctx.buffer
+
+  if type(value) ~= 'table' or ctx.seen[value] or depth > ctx.maxDepth then
+    buffer[#buffer + 1] = formatValue(value)
+    return
+  end
+  ctx.seen[value] = true
+
+  local indentation = string.rep(ctx.indent, depth)
+  buffer[#buffer + 1] = '{\n'
+
+  local arraySize = 0
+  for i, item in ipairs(value) do
+    arraySize = i
+    buffer[#buffer + 1] = indentation
+    writeValue(ctx, item, depth + 1)
+    buffer[#buffer + 1] = ',\n'
+  end
+
+  for key, item in pairs(value) do
+    local isArrayIndex = type(key) == 'number' and key >= 1 and key <= arraySize and key % 1 == 0
+    if not isArrayIndex then
+      buffer[#buffer + 1] = indentation .. formatKey(key)
+      writeValue(ctx, item, depth + 1)
+      buffer[#buffer + 1] = ',\n'
+    end
+  end
+
+  buffer[#buffer + 1] = string.rep(ctx.indent, depth - 1) .. '}'
+end
+
 function table.tostring(t, maxDepth, indent)
-  local seen = {}
-  local buffer = {}
-
-  local function add(text)
-    buffer[#buffer + 1] = text
-  end
-
-  local function writeValue(value, depth)
-    if type(value) ~= 'table' or seen[value] or depth > maxDepth then
-      add(formatValue(value))
-      return
-    end
-    seen[value] = true
-
-    local indentation = string.rep(indent, depth)
-    add('{\n')
-
-    local arraySize = 0
-    for i, item in ipairs(value) do
-      arraySize = i
-      add(indentation)
-      writeValue(item, depth + 1)
-      add(',\n')
-    end
-
-    for key, item in pairs(value) do
-      local isArrayIndex = type(key) == 'number' and key >= 1 and key <= arraySize and key % 1 == 0
-      if not isArrayIndex then
-        add(indentation .. formatKey(key))
-        writeValue(item, depth + 1)
-        add(',\n')
-      end
-    end
-
-    add(string.rep(indent, depth - 1) .. '}')
-  end
-
-  writeValue(t, 1)
-  return table.concat(buffer)
+  local state = {
+    seen = {},
+    buffer = {},
+    maxDepth = maxDepth or math.huge,
+    indent = indent or '  ',
+  }
+  writeValue(state, t, 1)
+  return table.concat(state.buffer)
 end
 
 function main()
