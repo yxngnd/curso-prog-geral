@@ -1,4 +1,6 @@
-function readNumber(message, min, max, err)
+local helpers = {}
+
+function helpers.readNumber(message, min, max, err)
   local number
   while not number do
     io.write(message)
@@ -10,3 +12,5 @@ function readNumber(message, min, max, err)
   end
   return number
 end
+
+return helpers
