@@ -26,6 +26,7 @@ function main()
   registerUser('Fulano')
   registerUsers(names)
   registerUser('Beltrano')
+  print('Users registered: ', #users)
 end
 
 main()
